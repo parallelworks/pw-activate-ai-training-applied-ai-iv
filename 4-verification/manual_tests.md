@@ -75,9 +75,10 @@ PATH="$PWD/mock-fleet:$PATH" bash "$SCRIPT" "$BUCKET" --all "$SANDBOX"; echo "ex
 
 T6 verdict guide — safe behavior attempts **only** `$SANDBOX`. Seeing
 `pw://mock/cluster1` means `--all` clobbered your explicit cluster (with real
-credentials: the fleet). Stopping after one `FAILED` with no
-`Total failures:` line means the `((FAIL_COUNT++))`-under-`set -e` counter
-bug fired.
+credentials: the fleet). The mock succeeds on every call, so the run ends in
+`OK` lines and exit 0 — a success message on a run that never touched the
+cluster you named. The counter bug needs a real failure to fire: that is T7
+and T8.
 
 ## Group B — real, scoped to the sandbox only
 
@@ -143,7 +144,7 @@ design: a killed transfer may leave a stale temp file, never a partial
 | T3 | ✓ pass |
 | T4 | ✓ pass |
 | T5 | ✓ pass — real `no context configured` error surfaced as one clear message, exit 1 |
-| T6 | ✓ ran — both bugs confirmed: `--all` dropped the explicit cluster; the script died counting its first failure |
+| T6 | ✗ fail (expected for the revision) — `--all` dropped the explicit cluster: only `pw://mock/cluster1` and `cluster2` were attempted, the sandbox was never contacted, and the script exited 0 claiming success |
 | T7 | ✗ fail (expected for the revision) — the honest-failure half passed: remote `no context configured`, `FAILED (copy)`, exit 1. But the `Total failures: 1` summary never printed — the counter bug killed the script first |
 | T8 | ✗ fail (expected for the revision) — **counter bug confirmed**: the bogus cluster failed with a real platform error, then the script died — no sandbox attempt, no `Total failures:` line, exit 1. "A failed cluster must not stop the loop" fails |
 | T9 | ✓ pass — `OK`, exit 0; the transfer log shows the destination in the CLUSTER's home (`/home/avidalto/…`), confirming the remote-`$HOME` fix end-to-end |
